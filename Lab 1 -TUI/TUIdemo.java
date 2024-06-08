@@ -1,5 +1,7 @@
 package com.mybank.tui;
 
+import com.mybank.data.DataSource;
+import com.mybank.domain.*;
 import jexer.TAction;
 import jexer.TApplication;
 import jexer.TField;
@@ -7,10 +9,10 @@ import jexer.TText;
 import jexer.TWindow;
 import jexer.event.TMenuEvent;
 import jexer.menu.TMenu;
-
+import java.util.Locale;
 /**
  *
- * @author Alexander 'Taurus' Babich
+ * @author Taisia Derkach
  */
 public class TUIdemo extends TApplication {
 
@@ -18,6 +20,7 @@ public class TUIdemo extends TApplication {
     private static final int CUST_INFO = 2010;
 
     public static void main(String[] args) throws Exception {
+         Locale.setDefault(new Locale("en", "US"));
         TUIdemo tdemo = new TUIdemo();
         (new Thread(tdemo)).start();
     }
@@ -25,6 +28,10 @@ public class TUIdemo extends TApplication {
     public TUIdemo() throws Exception {
         super(BackendType.SWING);
 
+        new DataSource("test.dat").loadData();
+
+        DataSource ds = new DataSource("test.dat");
+        ds.loadData();
         addToolMenu();
         //custom 'File' menu
         TMenu fileMenu = addMenu("&File");
@@ -59,7 +66,7 @@ public class TUIdemo extends TApplication {
         return super.onMenu(menu);
     }
 
-    private void ShowCustomerDetails() {
+     private void ShowCustomerDetails() {
         TWindow custWin = addWindow("Customer Window", 2, 1, 40, 10, TWindow.NOZOOMBOX);
         custWin.newStatusBar("Enter valid customer number and press Show...");
 
@@ -71,8 +78,25 @@ public class TUIdemo extends TApplication {
             public void DO() {
                 try {
                     int custNum = Integer.parseInt(custNo.getText());
-                    //details about customer with index==custNum
-                    details.setText("Owner Name: John Doe (id="+custNum+")\nAccount Type: 'Checking'\nAccount Balance: $200.00");
+
+                    Customer customer = Bank.getCustomer(custNum);
+                    Account account = customer.getAccount(0);
+                    String accountType = "";
+
+                    if (account instanceof SavingsAccount) {
+                        accountType = "Savings";
+                    } else if (account instanceof CheckingAccount) {
+                        accountType = "Checking";
+                    } else {
+                        accountType = "Unknown";
+                    }
+
+                    details.setText(
+                        String.format(
+                            "Owner Name: %s %s (id=%d)\nAccount Type: %s\nAccount Balance: $%.2f",
+                            customer.getFirstName(), customer.getLastName(), custNum, accountType, account.getBalance()
+                        )
+                    );
                 } catch (Exception e) {
                     messageBox("Error", "You must provide a valid customer number!").show();
                 }
